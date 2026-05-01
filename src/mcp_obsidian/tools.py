@@ -8,6 +8,7 @@ from mcp.types import (
 import json
 import os
 from . import obsidian
+from . import spec_loader
 
 api_key = os.getenv("OBSIDIAN_API_KEY", "")
 obsidian_host = os.getenv("OBSIDIAN_HOST", "127.0.0.1")
@@ -233,6 +234,18 @@ class PatchContentToolHandler(ToolHandler):
        super().__init__("obsidian_patch_content")
 
    def get_tool_description(self):
+       params = spec_loader.get_patch_parameters()
+       delimiter = params.get("Target-Delimiter", {}).get("schema", {}).get("default", "::")
+       target_type_desc = params.get("Target-Type", {}).get("description", "Type of target to patch")
+
+       target_description = (
+           f"Target identifier depending on target_type:\n"
+           f"- heading: heading path using '{delimiter}' as the delimiter for nested headings "
+           f"(e.g., 'Heading 1{delimiter}Subheading 1{delimiter}Subsubheading'). Top-level heading uses just the heading text.\n"
+           f"- block: block reference ID (e.g., '^block-id')\n"
+           f"- frontmatter: the frontmatter key name (e.g., 'tags')"
+       )
+
        return Tool(
            name=self.name,
            description="Insert content into an existing note relative to a heading, block reference, or frontmatter field.",
@@ -251,12 +264,12 @@ class PatchContentToolHandler(ToolHandler):
                    },
                    "target_type": {
                        "type": "string",
-                       "description": "Type of target to patch",
+                       "description": target_type_desc,
                        "enum": ["heading", "block", "frontmatter"]
                    },
                    "target": {
-                       "type": "string", 
-                       "description": "Target identifier (heading path, block reference, or frontmatter field)"
+                       "type": "string",
+                       "description": target_description
                    },
                    "content": {
                        "type": "string",
